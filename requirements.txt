@@ -1,0 +1,2 @@
+# Needed to run the app
+PyQt6>=6.4
