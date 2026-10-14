@@ -430,14 +430,16 @@ def nonfinite_table(keys: list[tuple], model: str | None = None, hit: tuple | No
     return f'<table class="grid" cellspacing="0"><tr><th></th>{head}</tr>{"".join(rows)}</table>'
 
 
-def model_paradigm(token, entry) -> str:
-    """HTML of the model paradigm that this word follows ("" if none)."""
+def model_paradigm(token, entry, verb=None) -> str:
+    """HTML of the model paradigm that this word follows ("" if none).
+
+    *verb* is the verb's own dictionary entry when *entry* is that of a participle.
+    """
     cats = token.cats
     upos = token.upos
     verbform = cats.get("verbform")
     if upos in ("VERB", "AUX"):
-        base = entry
-        got = verb_model(token, base)
+        got = verb_model(token, verb or entry)
         if verbform == "finite" or (verbform is None and cats.get("mood")):
             if not got:
                 return ('<p class="muted">This verb is irregular; the model paradigms cover only amāre, monēre, legere, '
@@ -499,10 +501,12 @@ def model_paradigm(token, entry) -> str:
     return ""
 
 
-def morphology_topics(token, entry) -> list[str]:
+def morphology_topics(token, entry, verb=None) -> list[str]:
     """A&G topics on the form of the word (declension, conjugation ...)."""
     cats, upos = token.cats, token.upos
     out = []
+    if upos in ("VERB", "AUX") and verb is not None:
+        entry = verb                                  # the verb behind a participle
     if upos in ("NOUN", "PROPN"):
         key = noun_model(token, entry)
         out.append({"hora": "decl1", "servus": "decl2", "liber": "decl2", "verbum": "decl2", "sol": "decl3",

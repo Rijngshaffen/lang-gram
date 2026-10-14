@@ -79,6 +79,41 @@ def test_latin_paradigm_marks_the_clicked_form():
     assert "Dēclīnātiō III" in model and 'class="hit"' in model
 
 
+def test_paradigm_tab_names_the_declension_or_conjugation():
+    def top(lang, work, section, word):
+        html = analyse(LIB, find(lang, work, section, word)).paradigm
+        assert html.startswith(("<h2>Declension type</h2>", "<h2>Conjugation type</h2>")), html[:80]
+        return html.split("<h2>")[1]
+
+    assert "Third declension" in top("la", 0, 0, "partēs") and "mōns" in top("la", 0, 0, "partēs")
+    assert "Fifth declension" in top("la", 0, 2, "rēbus")
+    assert "Fourth declension" in top("la", 0, 2, "senātū") and "senātūs" in top("la", 0, 2, "senātū")
+    assert "Second conjugation" in top("la", 0, 2, "persuādet")
+    assert "-iō type" in top("la", 0, 2, "suscipit")
+    # a participle: the conjugation of its verb, and how the participle itself declines
+    occupato = top("la", 0, 2, "occupātō")
+    assert "First conjugation" in occupato and "occupāre" in occupato and "magnus" in occupato
+    assert "Deponent" in top("la", 0, 2, "proficīscendum")
+    assert "Mixed adjective declension" in top("de", 0, 0, "kleine")
+    assert "Strong declension" in top("de", 0, 0, "Kinde") and "Kinder" in top("de", 0, 0, "Kinde")
+    assert "Strong verb" in top("de", 0, 0, "ansah") and "sieht an" in top("de", 0, 0, "ansah")
+    assert "soft type" in top("cs", 0, 0, "králi") and "muž" in top("cs", 0, 0, "králi")
+    assert "Class IV" in top("cs", 0, 0, "naučil")
+    assert "Feminine in -a" in top("pl", 0, 2, "głowami") and "hard consonant" in top("pl", 0, 2, "głowami")
+    assert "Conjugation II" in top("pl", 0, 2, "kręciły")
+    # words that do not inflect get no such heading
+    assert "type</h2>" not in analyse(LIB, find("la", 0, 0, "in")).paradigm
+
+
+def test_latin_participle_uses_the_conjugation_of_its_verb():
+    tok = find("la", 0, 2, "occupātō")
+    paradigm = analyse(LIB, tok).paradigm
+    model = paradigm.split("<h2>Model paradigm</h2>")[1].split("<h2>")[0]
+    assert 'class="hit">amāt' in model                 # occupāre is first conjugation, like amāre
+    grammar = analyse(LIB, tok).grammar
+    assert "First conjugation" in grammar
+
+
 def test_german_contraction_and_adjective_declension():
     am = find("de", 0, 0, "am")
     assert [t.form for t in am.siblings_in_token()] == ["an", "dem"]

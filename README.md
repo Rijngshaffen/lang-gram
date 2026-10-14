@@ -8,8 +8,10 @@ Latin, German, Czech or Polish, click any word, and the side panel shows
   and the word's **role in the sentence**: what it depends on, what depends on
   it, and which construction it stands in (ablative absolute, accusative and
   infinitive, purpose clause, two-way preposition, genitive of negation …);
-* **Paradigm** – the complete inflection of that word with the clicked form
-  marked; for Latin also the model paradigm the word follows;
+* **Paradigm** – the declension or conjugation type of the word (third
+  declension i-stem, weak masculine noun, verb class IV …) with its key forms,
+  then the complete inflection with the clicked form marked; for Latin also the
+  model paradigm the word follows;
 * **Grammar** – the grammar sections that explain the form and the
   construction: Allen & Greenough for Latin, Wikipedia's grammar tables for
   the other languages.
@@ -137,6 +139,7 @@ lang_gram/appearance.py  light / dark theme, following the desktop setting
 lang_gram/theme.py     the colours of both themes
 lang_gram/analysis.py  what the panel says about a word
 lang_gram/paradigm.py  paradigm tables from dictionary entries
+lang_gram/inflection.py  declension / conjugation type of a word, in words
 lang_gram/latin_paradigms.py  Latin model paradigms as data
 lang_gram/lang_*.py    language-specific rules and grammar links
 lang_gram/morph.py     feature vocabulary shared with the tools

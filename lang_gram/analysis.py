@@ -5,7 +5,7 @@ import re
 from dataclasses import dataclass, field
 from html import escape
 
-from . import lang_cs, lang_de, lang_la, lang_pl
+from . import inflection, lang_cs, lang_de, lang_la, lang_pl
 from .library import Library, Token
 from .morph import CATEGORY_ORDER, LANGS, norm_form
 from .paradigm import entry_paradigm
@@ -222,6 +222,16 @@ def entry_for(lib: Library, token: Token):
     return lib.lexicon(token.lang).get(token.lex)
 
 
+def verb_entry(lib: Library, token: Token, entry):
+    """The verb's own dictionary entry when *entry* is that of one of its participles."""
+    if entry is None or token.upos not in ("VERB", "AUX"):
+        return None
+    for base, kind in lib.lexicon(token.lang).bases(entry):
+        if kind in ("participle", "form") and base["p"] == "verb":
+            return base
+    return None
+
+
 def display_cats(token: Token, entry) -> dict:
     cats = dict(token.cats)
     if token.lang == "la":
@@ -324,7 +334,8 @@ def word_block(lib: Library, token: Token, heading: bool = True):
     # dictionary line
     lemma = entry["w"] if entry and norm_form(lang, entry["w"]) == norm_form(lang, token.lemma) else token.lemma
     line = f'<span class="lemma">{escape(lemma)}</span> &nbsp;<span class="tag">{escape(pos_name(token))}</span>'
-    summary = summary_line(token, entry)
+    verb = verb_entry(lib, token, entry)
+    summary = summary_line(token, verb or entry)
     if summary:
         line += f" &nbsp;·&nbsp; {escape(summary)}"
     html.append(f"<p>{line}</p>")
@@ -354,12 +365,12 @@ def word_block(lib: Library, token: Token, heading: bool = True):
                     'parser alone.</p>')
     # form
     html.append("<h2>Form</h2>")
-    html.append(form_table(token, entry))
+    html.append(form_table(token, verb or entry))
     # role
     html.append("<h2>Role in the sentence</h2>")
     html.append(f"<p>{relation_html(token)}</p>")
     refs: list[str] = []
-    notes = module.syntax_notes(token, entry) if lang == "la" else module.notes(token, entry)
+    notes = module.syntax_notes(token, verb or entry) if lang == "la" else module.notes(token, entry)
     if notes:
         items = []
         for text, note_refs in notes:
@@ -384,8 +395,13 @@ def word_block(lib: Library, token: Token, heading: bool = True):
 def paradigm_html(lib: Library, token: Token, entry) -> str:
     lang = token.lang
     parts = []
+    verb = verb_entry(lib, token, entry)
+    inflection_type = inflection.describe(token, entry, verb, lib.lexicon(lang))
+    if inflection_type:
+        parts.append(f"<h2>{inflection_type[0]}</h2>{inflection_type[1]}")
+    described = len(parts)
     if lang == "la":
-        model = lang_la.model_paradigm(token, entry)
+        model = lang_la.model_paradigm(token, entry, verb)
         if model:
             parts.append("<h2>Model paradigm</h2>" + model)
     if entry:
@@ -404,7 +420,7 @@ def paradigm_html(lib: Library, token: Token, entry) -> str:
                     parts.append('<p class="muted small">The form in the text is marked; a paler mark shows '
                                  'other cells with the same spelling.</p>')
                 parts.append(table)
-        if len(parts) > (1 if lang == "la" else 0):
+        if any("<h2>Forms of" in p for p in parts[described:]):
             parts.append(f'<p class="muted small">Forms from {escape(lexicon.source)}.</p>')
     if not parts:
         parts.append('<p class="muted">No paradigm: this word does not inflect, or it is not in the '
@@ -435,7 +451,7 @@ def grammar_html(lib: Library, token: Token, entry, refs: list[str]) -> str:
     parts = []
     if lang == "la":
         topics = list(refs)
-        for t in lang_la.morphology_topics(token, entry):
+        for t in lang_la.morphology_topics(token, entry, verb_entry(lib, token, entry)):
             if t not in topics:
                 topics.append(t)
         if not topics:
